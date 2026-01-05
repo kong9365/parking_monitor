@@ -1,0 +1,66 @@
+name: Parking Monitor
+
+on:
+  schedule:
+    # 매일 오전 9시, 오후 12시, 오후 6시에 실행 (KST 기준)
+    - cron: '0 0,3,9 * * *'  # UTC 시간 (KST - 9시간)
+  workflow_dispatch:  # 수동 실행 가능
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 저장소 체크아웃
+      uses: actions/checkout@v4
+    
+    - name: Python 설정
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    
+    - name: 의존성 설치
+      run: |
+        pip install -r requirements.txt
+        playwright install chromium
+        playwright install-deps
+    
+    - name: 환경 변수 설정
+      run: |
+        echo "PARKING_USER_ID=${{ secrets.PARKING_USER_ID }}" >> .env
+        echo "PARKING_PASSWORD=${{ secrets.PARKING_PASSWORD }}" >> .env
+        echo "PARKING_URL=${{ secrets.PARKING_URL }}" >> .env
+        echo "GOOGLE_HOME_DEVICE_NAME=${{ secrets.GOOGLE_HOME_DEVICE_NAME }}" >> .env
+        echo "GOOGLE_BROADCASTER_TYPE=${{ secrets.GOOGLE_BROADCASTER_TYPE }}" >> .env
+    
+    - name: Google 인증 토큰 설정
+      run: |
+        mkdir -p data
+        echo '${{ secrets.GOOGLE_TOKEN_JSON }}' > data/token.json
+    
+    - name: 입출차 데이터 수집 및 알림
+      run: |
+        cd src
+        python main_with_notification.py --broadcaster ${{ secrets.GOOGLE_BROADCASTER_TYPE || 'cast' }}
+    
+    - name: 데이터베이스 커밋
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add data/parking_records.db
+        git diff --quiet && git diff --staged --quiet || git commit -m "Update parking records - $(date +'%Y-%m-%d %H:%M:%S')"
+    
+    - name: 변경사항 푸시
+      uses: ad-m/github-push-action@master
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        branch: ${{ github.ref }}
+    
+    - name: 로그 업로드 (실패 시)
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: logs
+        path: logs/
+        retention-days: 7
+
