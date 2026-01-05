@@ -45,7 +45,7 @@ DATE_FORMAT = '%Y-%m-%d'
 DATETIME_FORMAT = '%Y/%m/%d %H:%M:%S'
 
 # Google Home 설정
-GOOGLE_HOME_DEVICE_NAME = os.getenv('GOOGLE_HOME_DEVICE_NAME', 'Living Room')
+GOOGLE_HOME_DEVICE_NAME = os.getenv('GOOGLE_HOME_DEVICE_NAME', '주방')
 GOOGLE_BROADCASTER_TYPE = os.getenv('GOOGLE_BROADCASTER_TYPE', 'cast')  # 'assistant' 또는 'cast'
 
 # 세대 차량 번호 리스트

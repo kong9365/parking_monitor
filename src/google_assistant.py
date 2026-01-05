@@ -276,7 +276,7 @@ class GoogleHomeCastBroadcaster:
         Args:
             device_name: Google Home 기기 이름
         """
-        self.device_name = device_name or os.getenv('GOOGLE_HOME_DEVICE_NAME', 'Living Room')
+        self.device_name = device_name or os.getenv('GOOGLE_HOME_DEVICE_NAME', '주방')
         self.device = None
     
     def connect(self) -> bool:

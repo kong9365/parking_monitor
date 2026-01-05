@@ -195,7 +195,7 @@ def main():
     secrets = load_github_secrets()
     
     # 기기 이름 설정
-    device_name = args.device or secrets.get('GOOGLE_HOME_DEVICE_NAME', '홈')
+    device_name = args.device or secrets.get('GOOGLE_HOME_DEVICE_NAME', '주방')
     broadcaster_type = secrets.get('GOOGLE_BROADCASTER_TYPE', 'cast')
     
     print("\n" + "="*60)
