@@ -147,6 +147,13 @@ class GoogleAssistantBroadcaster:
                 tts = gTTS(text=message, lang='ko')
                 tts.save(temp_file)
             
+            # GitHub Actions 환경 확인 (클라우드에서는 로컬 네트워크 기기에 접근 불가)
+            if os.getenv('GITHUB_ACTIONS') == 'true':
+                system_logger.warning("GitHub Actions 환경에서는 로컬 네트워크의 Google Home에 접근할 수 없습니다.")
+                system_logger.info("방송은 로컬 환경에서만 가능합니다.")
+                os.unlink(temp_file)
+                return False
+            
             # Chromecast 기기 검색
             system_logger.info(f"Google Home 기기 검색 중: {device_name}")
             chromecasts, browser = pychromecast.get_listed_chromecasts(
@@ -154,7 +161,8 @@ class GoogleAssistantBroadcaster:
             )
             
             if not chromecasts:
-                system_logger.error(f"기기를 찾을 수 없습니다: {device_name}")
+                system_logger.warning(f"기기를 찾을 수 없습니다: {device_name}")
+                system_logger.info("같은 네트워크에 연결되어 있는지 확인하세요.")
                 os.unlink(temp_file)
                 browser.stop_discovery()
                 return False
@@ -289,6 +297,12 @@ class GoogleHomeCastBroadcaster:
         try:
             import pychromecast
             
+            # GitHub Actions 환경 확인 (클라우드에서는 로컬 네트워크 기기에 접근 불가)
+            if os.getenv('GITHUB_ACTIONS') == 'true':
+                system_logger.warning("GitHub Actions 환경에서는 로컬 네트워크의 Google Home에 접근할 수 없습니다.")
+                system_logger.info("방송은 로컬 환경에서만 가능합니다.")
+                return False
+            
             system_logger.info(f"Google Home 기기 검색 중: {self.device_name}")
             
             # Chromecast 기기 검색
@@ -297,7 +311,8 @@ class GoogleHomeCastBroadcaster:
             )
             
             if not chromecasts:
-                system_logger.error(f"기기를 찾을 수 없습니다: {self.device_name}")
+                system_logger.warning(f"기기를 찾을 수 없습니다: {self.device_name}")
+                system_logger.info("같은 네트워크에 연결되어 있는지 확인하세요.")
                 return False
             
             self.device = chromecasts[0]

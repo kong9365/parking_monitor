@@ -61,6 +61,13 @@ class NotificationManager:
             초기화 성공 여부
         """
         try:
+            # GitHub Actions 환경에서는 방송 건너뛰기
+            import os
+            if os.getenv('GITHUB_ACTIONS') == 'true':
+                system_logger.info("GitHub Actions 환경 감지: 방송 기능을 건너뜁니다.")
+                system_logger.info("데이터 수집 및 저장은 정상적으로 진행됩니다.")
+                return False
+            
             if self.broadcaster_type == 'assistant':
                 # Google Assistant 인증
                 return self.broadcaster.authenticate()
