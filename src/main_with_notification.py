@@ -76,6 +76,10 @@ def main():
                 system_logger.error("로그인 실패")
                 return 1
             
+            # 포인트 정보 조회
+            points = scraper.get_points_info()
+            system_logger.info(f"[포인트 정보] 기본: {points['basic']}P / 구매: {points['purchase']}P")
+            
             # 입출차 조회 페이지 이동
             if not scraper.navigate_to_inout_list():
                 system_logger.error("입출차 조회 페이지 이동 실패")
@@ -87,6 +91,15 @@ def main():
             
             # 결과 출력
             display_records(records)
+            
+            # 포인트 정보 출력
+            print(f"\n{'='*100}")
+            print(f"💰 포인트 정보")
+            print(f"{'='*100}")
+            print(f"  기본 선입 포인트: {points['basic']:,}P")
+            print(f"  구매 선입 포인트: {points['purchase']:,}P")
+            print(f"  총 포인트: {points['basic'] + points['purchase']:,}P")
+            print(f"{'='*100}\n")
             
             # 알림 처리
             if notification_manager and records:

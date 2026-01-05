@@ -16,6 +16,7 @@ class ParkingScraper:
         self.browser: Optional[Browser] = None
         self.page: Optional[Page] = None
         self.is_logged_in = False
+        self.points_info: Dict[str, int] = {}
     
     def start(self):
         """브라우저 시작"""
@@ -41,6 +42,51 @@ class ParkingScraper:
             scraping_logger.info("브라우저 종료 완료")
         except Exception as e:
             scraping_logger.error(f"브라우저 종료 중 오류: {str(e)}")
+    
+    def get_points_info(self) -> Dict[str, int]:
+        """
+        포인트 정보 조회
+        
+        Returns:
+            포인트 정보 딕셔너리 {'basic': 기본 포인트, 'purchase': 구매 포인트}
+        """
+        try:
+            # 포인트 정보는 오른쪽 상단에 표시됨
+            # 예: "기본 선입 포인트 : 6000" "구매 선입 포인트 : 0"
+            
+            points_info = self.page.evaluate('''() => {
+                const result = {
+                    basic: 0,
+                    purchase: 0
+                };
+                
+                // Settings 드롭다운 메뉴에서 포인트 정보 찾기
+                const dropdownText = document.body.innerText;
+                
+                // 기본 선입 포인트 추출
+                const basicMatch = dropdownText.match(/기본 선입 포인트[\\s:]+([0-9]+)/);
+                if (basicMatch) {
+                    result.basic = parseInt(basicMatch[1]);
+                }
+                
+                // 구매 선입 포인트 추출
+                const purchaseMatch = dropdownText.match(/구매 선입 포인트[\\s:]+([0-9]+)/);
+                if (purchaseMatch) {
+                    result.purchase = parseInt(purchaseMatch[1]);
+                }
+                
+                return result;
+            }''')
+            
+            self.points_info = points_info
+            scraping_logger.info(
+                f"포인트 정보 조회 완료 - 기본: {points_info['basic']}, 구매: {points_info['purchase']}"
+            )
+            return points_info
+        
+        except Exception as e:
+            scraping_logger.error(f"포인트 정보 조회 실패: {str(e)}")
+            return {'basic': 0, 'purchase': 0}
     
     def login(self) -> bool:
         """
