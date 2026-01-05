@@ -22,8 +22,7 @@ jobs:
     - name: 의존성 설치
       run: |
         pip install -r requirements.txt
-        playwright install chromium
-        playwright install-deps
+        playwright install chromium --with-deps
     
     - name: 환경 변수 설정
       run: |
