@@ -104,6 +104,8 @@ def main():
             # 알림 처리
             if notification_manager and records:
                 system_logger.info("변경 감지 및 알림 전송 중...")
+                # 현재 포인트를 notification_manager에 전달
+                notification_manager.set_current_points(points['basic'])
                 stats = notification_manager.process_new_records(records)
                 
                 print("\n[알림 처리 결과]")

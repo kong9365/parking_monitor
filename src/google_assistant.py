@@ -151,7 +151,8 @@ class GoogleAssistantBroadcaster:
             message = f"방문차량 {car_number}, {name}님이 {location}로 입차하셨습니다."
         return self.broadcast(message)
     
-    def broadcast_exit(self, car_number: str, name: str, location: str, is_resident: bool = False) -> bool:
+    def broadcast_exit(self, car_number: str, name: str, location: str, is_resident: bool = False, 
+                      current_points: int = 0) -> bool:
         """
         출차 안내방송
         
@@ -160,6 +161,7 @@ class GoogleAssistantBroadcaster:
             name: 고객명
             location: 출차 위치
             is_resident: 세대 차량 여부
+            current_points: 현재 포인트 (방문차량 출차 시 사용)
         
         Returns:
             방송 성공 여부
@@ -168,6 +170,14 @@ class GoogleAssistantBroadcaster:
             message = f"세대 차량 {car_number}가 {location}로 출차하였습니다."
         else:
             message = f"방문차량 {car_number}, {name}님이 {location}로 출차하셨습니다."
+            
+            # 방문차량 출차 시 포인트 정보 추가
+            if current_points > 0:
+                import config
+                base_points = config.BASE_POINTS
+                percentage = int((current_points / base_points) * 100)
+                message += f" 잔여 포인트 {current_points:,}P, 기준 대비 {percentage}% 남았습니다."
+        
         return self.broadcast(message)
 
 
@@ -270,11 +280,20 @@ class GoogleHomeCastBroadcaster:
             message = f"방문차량 {car_number}, {name}님이 {location}로 입차하셨습니다."
         return self.speak(message)
     
-    def broadcast_exit(self, car_number: str, name: str, location: str, is_resident: bool = False) -> bool:
+    def broadcast_exit(self, car_number: str, name: str, location: str, is_resident: bool = False,
+                      current_points: int = 0) -> bool:
         """출차 안내방송"""
         if is_resident:
             message = f"세대 차량 {car_number}가 {location}로 출차하였습니다."
         else:
             message = f"방문차량 {car_number}, {name}님이 {location}로 출차하셨습니다."
+            
+            # 방문차량 출차 시 포인트 정보 추가
+            if current_points > 0:
+                import config
+                base_points = config.BASE_POINTS
+                percentage = int((current_points / base_points) * 100)
+                message += f" 잔여 포인트 {current_points:,}P, 기준 대비 {percentage}% 남았습니다."
+        
         return self.speak(message)
 

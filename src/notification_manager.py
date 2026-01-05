@@ -34,6 +34,7 @@ class NotificationManager:
         """
         self.db = db
         self.detector = ChangeDetector(db)
+        self.current_points = 0  # 현재 포인트 저장
         
         # 방송기 선택
         if broadcaster_type == 'assistant':
@@ -42,6 +43,15 @@ class NotificationManager:
             self.broadcaster = GoogleHomeCastBroadcaster()
         
         self.broadcaster_type = broadcaster_type
+    
+    def set_current_points(self, points: int):
+        """
+        현재 포인트 설정
+        
+        Args:
+            points: 현재 포인트
+        """
+        self.current_points = points
     
     def initialize_broadcaster(self) -> bool:
         """
@@ -103,7 +113,9 @@ class NotificationManager:
                 car_type = "세대 차량" if is_resident else "방문차량"
                 system_logger.info(f"출차 알림 전송: [{car_type}] {car_number} - {name}")
                 
-                if self.broadcaster.broadcast_exit(car_number, name, location, is_resident):
+                # 방문차량 출차 시 포인트 정보 포함
+                if self.broadcaster.broadcast_exit(car_number, name, location, is_resident, 
+                                                  self.current_points if not is_resident else 0):
                     stats['notifications'] += 1
             
             system_logger.success(
