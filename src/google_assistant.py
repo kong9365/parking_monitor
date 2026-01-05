@@ -104,12 +104,14 @@ class GoogleAssistantBroadcaster:
             system_logger.error(f"인증 실패: {str(e)}")
             return False
     
-    def broadcast(self, message: str) -> bool:
+    def broadcast(self, message: str, device_name: Optional[str] = None) -> bool:
         """
         Google Home으로 메시지 방송
+        Google Assistant SDK 인증 후 Chromecast를 통해 방송
         
         Args:
             message: 방송할 메시지
+            device_name: Google Home 기기 이름 (기본값: config에서 가져옴)
         
         Returns:
             방송 성공 여부
@@ -119,17 +121,99 @@ class GoogleAssistantBroadcaster:
                 system_logger.error("인증이 필요합니다")
                 return False
             
-            # Google Home Notifier API 사용
-            # 참고: 실제 구현은 google-home-notifier 또는 pychromecast 사용
-            system_logger.info(f"방송 메시지: {message}")
+            system_logger.info(f"Google Assistant SDK를 통한 방송 메시지: {message}")
             
-            # TODO: 실제 방송 구현
-            # 현재는 로그만 출력
-            system_logger.success(f"방송 완료: {message}")
+            # Chromecast로 재생하기 위해 pychromecast 사용
+            try:
+                import pychromecast
+            except ImportError:
+                system_logger.error("pychromecast 모듈이 설치되지 않았습니다")
+                return False
+            
+            device_name = device_name or config.GOOGLE_HOME_DEVICE_NAME
+            
+            # gTTS로 음성 생성 (Google Assistant SDK 인증은 완료된 상태)
+            from gtts import gTTS
+            import tempfile
+            import time
+            import http.server
+            import socketserver
+            import threading
+            import socket
+            
+            # TTS 생성
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.mp3') as fp:
+                temp_file = fp.name
+                tts = gTTS(text=message, lang='ko')
+                tts.save(temp_file)
+            
+            # Chromecast 기기 검색
+            system_logger.info(f"Google Home 기기 검색 중: {device_name}")
+            chromecasts, browser = pychromecast.get_listed_chromecasts(
+                friendly_names=[device_name]
+            )
+            
+            if not chromecasts:
+                system_logger.error(f"기기를 찾을 수 없습니다: {device_name}")
+                os.unlink(temp_file)
+                browser.stop_discovery()
+                return False
+            
+            device = chromecasts[0]
+            device.wait()
+            system_logger.info(f"기기 연결 완료: {device.name}")
+            
+            # HTTP 서버 시작 (Chromecast는 로컬 파일을 직접 재생할 수 없음)
+            PORT = 8000
+            Handler = http.server.SimpleHTTPRequestHandler
+            
+            # 파일이 있는 디렉토리로 이동
+            original_dir = os.getcwd()
+            file_dir = os.path.dirname(temp_file)
+            file_name = os.path.basename(temp_file)
+            
+            os.chdir(file_dir)
+            
+            httpd = socketserver.TCPServer(("", PORT), Handler)
+            server_thread = threading.Thread(target=httpd.serve_forever)
+            server_thread.daemon = True
+            server_thread.start()
+            
+            # 로컬 IP 주소 가져오기
+            try:
+                s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                s.connect(('8.8.8.8', 80))
+                local_ip = s.getsockname()[0]
+                s.close()
+            except:
+                local_ip = '127.0.0.1'
+            
+            media_url = f'http://{local_ip}:{PORT}/{file_name}'
+            system_logger.info(f"미디어 URL: {media_url}")
+            
+            # Chromecast로 재생
+            mc = device.media_controller
+            mc.play_media(media_url, 'audio/mp3')
+            mc.block_until_active()
+            
+            # 재생 완료 대기 (메시지 길이에 따라 조정)
+            wait_time = max(5, len(message) * 0.1)
+            time.sleep(wait_time)
+            
+            # 정리
+            os.chdir(original_dir)
+            httpd.shutdown()
+            httpd.server_close()
+            os.unlink(temp_file)
+            browser.stop_discovery()
+            
+            system_logger.success(f"Google Assistant SDK를 통한 방송 완료: {message}")
             return True
         
         except Exception as e:
             system_logger.error(f"방송 실패: {str(e)}")
+            import traceback
+            traceback.print_exc()
             return False
     
     def broadcast_entry(self, car_number: str, name: str, location: str, is_resident: bool = False) -> bool:
