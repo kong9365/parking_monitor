@@ -2,8 +2,8 @@ name: Parking Monitor
 
 on:
   schedule:
-    # 매일 오전 9시, 오후 12시, 오후 6시에 실행 (KST 기준)
-    - cron: '0 0,3,9 * * *'  # UTC 시간 (KST - 9시간)
+    # 매 5분마다 실행 (실시간 모니터링)
+    - cron: '*/5 * * * *'  # 5분마다 (GitHub Actions 최소 간격)
   workflow_dispatch:  # 수동 실행 가능
 
 jobs:
